@@ -48,7 +48,9 @@ final: prev: {
             (patch: ! builtins.elem (builtins.baseNameOf patch) [
               "ICE-PR110280.patch"
             ])
-            oldAttrs.patches;
+            oldAttrs.patches ++ [
+            ./patches/0000-riscv-Add-T-Head-XuanTie-C910-and-C920.patch
+          ];
         });
       };
   };

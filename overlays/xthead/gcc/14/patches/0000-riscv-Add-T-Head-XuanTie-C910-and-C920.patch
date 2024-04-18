@@ -1,0 +1,106 @@
+From ea10b4d652479184836cd782693d27553c946e9a Mon Sep 17 00:00:00 2001
+From: silvanshade <silvanshade@users.noreply.github.com>
+Date: Thu, 18 Apr 2024 15:17:31 -0600
+Subject: [PATCH] riscv: Add T-Head XuanTie C910 and C920
+
+---
+ gcc/config/riscv/riscv-cores.def | 13 ++++++++++++
+ gcc/config/riscv/riscv.cc        | 34 ++++++++++++++++++++++++++++++++
+ gcc/doc/invoke.texi              |  5 +++--
+ 3 files changed, 50 insertions(+), 2 deletions(-)
+
+diff --git a/gcc/config/riscv/riscv-cores.def b/gcc/config/riscv/riscv-cores.def
+index 2f5efe3be86..cacff20a691 100644
+--- a/gcc/config/riscv/riscv-cores.def
++++ b/gcc/config/riscv/riscv-cores.def
+@@ -40,6 +40,8 @@ RISCV_TUNE("sifive-7-series", sifive_7, sifive_7_tune_info)
+ RISCV_TUNE("sifive-p400-series", sifive_p400, sifive_p400_tune_info)
+ RISCV_TUNE("sifive-p600-series", sifive_p600, sifive_p600_tune_info)
+ RISCV_TUNE("thead-c906", generic, thead_c906_tune_info)
++RISCV_TUNE("thead-c910", generic, thead_c910_tune_info)
++RISCV_TUNE("thead-c920", generic, thead_c920_tune_info)
+ RISCV_TUNE("xiangshan-nanhu", xiangshan, xiangshan_nanhu_tune_info)
+ RISCV_TUNE("generic-ooo", generic_ooo, generic_ooo_tune_info)
+ RISCV_TUNE("size", generic, optimize_size_tune_info)
+@@ -92,6 +94,17 @@ RISCV_CORE("thead-c906",      "rv64imafdc_xtheadba_xtheadbb_xtheadbs_xtheadcmo_"
+ 			      "xtheadmemidx_xtheadmempair_xtheadsync",
+ 			      "thead-c906")
+ 
++RISCV_CORE("thead-c910",      "rv64imafdc_xtheadba_xtheadbb_xtheadbs_xtheadcmo_"
++			      "xtheadcondmov_xtheadfmemidx_xtheadmac_"
++			      "xtheadmemidx_xtheadmempair_xtheadsync_",
++			      "thead-c910")
++
++RISCV_CORE("thead-c920",      "rv64imafdc_xtheadba_xtheadbb_xtheadbs_xtheadcmo_"
++			      "xtheadcondmov_xtheadfmemidx_xtheadmac_"
++			      "xtheadmemidx_xtheadmempair_xtheadsync_"
++			      "xtheadvector",
++			      "thead-c920")
++
+ RISCV_CORE("xiangshan-nanhu",      "rv64imafdc_zba_zbb_zbc_zbs_"
+ 			      "zbkb_zbkc_zbkx_zknd_zkne_zknh_zksed_zksh_"
+ 			      "svinval_zicbom_zicboz",
+diff --git a/gcc/config/riscv/riscv.cc b/gcc/config/riscv/riscv.cc
+index 0519e0679ed..7f9ab9b6f4a 100644
+--- a/gcc/config/riscv/riscv.cc
++++ b/gcc/config/riscv/riscv.cc
+@@ -498,6 +498,40 @@ static const struct riscv_tune_param thead_c906_tune_info = {
+   NULL,						/* vector cost */
+ };
+ 
++/* Costs to use when optimizing for T-HEAD c910.  */
++static const struct riscv_tune_param thead_c910_tune_info = {
++  {COSTS_N_INSNS (4), COSTS_N_INSNS (5)}, /* fp_add */
++  {COSTS_N_INSNS (4), COSTS_N_INSNS (5)}, /* fp_mul */
++  {COSTS_N_INSNS (20), COSTS_N_INSNS (20)}, /* fp_div */
++  {COSTS_N_INSNS (4), COSTS_N_INSNS (4)}, /* int_mul */
++  {COSTS_N_INSNS (18), COSTS_N_INSNS (34)}, /* int_div */
++  1,            /* issue_rate */
++  3,            /* branch_cost */
++  5,            /* memory_cost */
++  8,		/* fmv_cost */
++  false,            /* slow_unaligned_access */
++  false,	/* use_divmod_expansion */
++  RISCV_FUSE_NOTHING,                           /* fusible_ops */
++  NULL,						/* vector cost */
++};
++
++/* Costs to use when optimizing for T-HEAD c920.  */
++static const struct riscv_tune_param thead_c920_tune_info = {
++  {COSTS_N_INSNS (4), COSTS_N_INSNS (5)}, /* fp_add */
++  {COSTS_N_INSNS (4), COSTS_N_INSNS (5)}, /* fp_mul */
++  {COSTS_N_INSNS (20), COSTS_N_INSNS (20)}, /* fp_div */
++  {COSTS_N_INSNS (4), COSTS_N_INSNS (4)}, /* int_mul */
++  {COSTS_N_INSNS (18), COSTS_N_INSNS (34)}, /* int_div */
++  1,            /* issue_rate */
++  3,            /* branch_cost */
++  5,            /* memory_cost */
++  8,		/* fmv_cost */
++  false,            /* slow_unaligned_access */
++  false,	/* use_divmod_expansion */
++  RISCV_FUSE_NOTHING,                           /* fusible_ops */
++  &generic_vector_cost,						/* vector cost */
++};
++
+ /* Costs to use when optimizing for xiangshan nanhu.  */
+ static const struct riscv_tune_param xiangshan_nanhu_tune_info = {
+   {COSTS_N_INSNS (3), COSTS_N_INSNS (3)},	/* fp_add */
+diff --git a/gcc/doc/invoke.texi b/gcc/doc/invoke.texi
+index 7e517b8080e..33bd69a5ced 100644
+--- a/gcc/doc/invoke.texi
++++ b/gcc/doc/invoke.texi
+@@ -30918,8 +30918,9 @@ Note that @option{-mcpu} does not override @option{-march} or @option{-mtune}.
+ Optimize the output for the given processor, specified by microarchitecture or
+ particular CPU name.  Permissible values for this option are: @samp{rocket},
+ @samp{sifive-3-series}, @samp{sifive-5-series}, @samp{sifive-7-series},
+-@samp{thead-c906}, @samp{size}, @samp{sifive-p400-series},
+-@samp{sifive-p600-series}, and all valid options for @option{-mcpu=}.
++@samp{thead-c906}, @samp{thead-c910}, @samp{thead-c920}, @samp{size},
++@samp{sifive-p400-series}, @samp{sifive-p600-series},
++and all valid options for @option{-mcpu=}.
+ 
+ When @option{-mtune=} is not specified, use the setting from @option{-mcpu},
+ the default is @samp{rocket} if both are not specified.
+-- 
+2.44.0
+
